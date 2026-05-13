@@ -204,15 +204,18 @@ class BonsaiTabContainer(BonsaiNodeMixin, TabContainer):
         windows, it still always remains above the bar, hiding it always. That's fine -
         who'd intentionally move floats behind tiled windows, despite qtile allowing it.
         """
-        if qtile.core.name != "x11":
-            return
+        if qtile.core.name == "x11":
+            # Could also set `sibling`, but would need a reference to an existing
+            # window under the TC, which may not be present yet in some initial cases.
+            mask, values = xcbq.ConfigureMasks(stackmode=xcffib.xproto.StackMode.Below)
+            if float(".".join(xcffib.__xcb_proto_version__.split(".")[0:2])) < 1.12:
+                values = [i & 0xFFFFFFFF for i in values]
+            qtile.core.conn.conn.core.ConfigureWindow(self.bar_window.wid, mask, values)
+        elif qtile.core.name == "wayland":
+            from libqtile.backend.wayland.window import lib
 
-        # Could also set `sibling`, but would need a reference to an existing window
-        # under the TC, which may not be present yet in some initial cases.
-        mask, values = xcbq.ConfigureMasks(stackmode=xcffib.xproto.StackMode.Below)
-        if float(".".join(xcffib.__xcb_proto_version__.split(".")[0:2])) < 1.12:
-            values = [i & 0xFFFFFFFF for i in values]
-        qtile.core.conn.conn.core.ConfigureWindow(self.bar_window.wid, mask, values)
+            self.bar_window.reparent(lib.LAYER_BOTTOM)
+            self.bar_window.move_to_bottom()
 
     def _handle_click_bar(self, x: int, y: int, button: int):
         if self._on_click_tab_bar is None:

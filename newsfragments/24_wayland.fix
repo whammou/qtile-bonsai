@@ -1,0 +1,1 @@
+Extended the tab bar layering fix to the Wayland backend, preventing the tab bar from rendering above floating windows when `move_up()`/`move_down()` commands are invoked on floats.
